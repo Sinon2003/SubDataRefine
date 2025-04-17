@@ -124,91 +124,51 @@ def get_httpx_config(config):
     返回:
         包含httpx配置的字典
     """
-    if not config:
-        return {
-            "httpx_path": "httpx",
-            "threads": 20,
-            "timeout": 5,
-            "follow_redirects": True,
-            "status_code": True,
-            "title": True,
-            "output_file": "result.txt",
-            "input_file": "domains.txt",
-            "additional_args": "-rl 60,-rlm 3000",
-            "capture_output": True,
-            "output_log_file": "httpx_output.log"
-        }
+    # 默认配置
+    default_config = {
+        "httpx_path": "httpx",
+        "threads": 20,
+        "timeout": 5,
+        "follow_redirects": True,
+        "status_code": True,
+        "title": True,
+        "output_file": "result.txt",
+        "input_file": "domains.txt",
+        "additional_args": "-rl 60,-rlm 3000",
+        "capture_output": True,
+        "output_log_file": "httpx_output.log"
+    }
     
-    result = {}
+    # 如果配置对象为空或不包含httpx部分，直接返回默认配置
+    if not config or not config.has_section("httpx"):
+        return default_config.copy()
     
-    # httpx配置
-    if config.has_section("httpx"):
-        if config.has_option("httpx", "httpx_path"):
-            result["httpx_path"] = config.get("httpx", "httpx_path")
-        else:
-            result["httpx_path"] = "httpx"
-            
-        if config.has_option("httpx", "threads"):
-            result["threads"] = config.getint("httpx", "threads")
-        else:
-            result["threads"] = 20
-            
-        if config.has_option("httpx", "timeout"):
-            result["timeout"] = config.getint("httpx", "timeout")
-        else:
-            result["timeout"] = 5
-            
-        if config.has_option("httpx", "follow_redirects"):
-            result["follow_redirects"] = config.getboolean("httpx", "follow_redirects")
-        else:
-            result["follow_redirects"] = True
-            
-        if config.has_option("httpx", "status_code"):
-            result["status_code"] = config.getboolean("httpx", "status_code")
-        else:
-            result["status_code"] = True
-            
-        if config.has_option("httpx", "title"):
-            result["title"] = config.getboolean("httpx", "title")
-        else:
-            result["title"] = True
-            
-        if config.has_option("httpx", "output_file"):
-            result["output_file"] = config.get("httpx", "output_file")
-        else:
-            result["output_file"] = "result.txt"
-            
-        if config.has_option("httpx", "input_file"):
-            result["input_file"] = config.get("httpx", "input_file")
-        else:
-            result["input_file"] = "domains.txt"
-            
-        if config.has_option("httpx", "additional_args"):
-            result["additional_args"] = config.get("httpx", "additional_args")
-        else:
-            result["additional_args"] = "-rl 60,-rlm 3000"
-            
-        if config.has_option("httpx", "capture_output"):
-            result["capture_output"] = config.getboolean("httpx", "capture_output")
-        else:
-            result["capture_output"] = True
-            
-        if config.has_option("httpx", "output_log_file"):
-            result["output_log_file"] = config.get("httpx", "output_log_file")
-        else:
-            result["output_log_file"] = "httpx_output.log"
-    else:
-        # 默认配置
-        result["httpx_path"] = "httpx"
-        result["threads"] = 20
-        result["timeout"] = 5
-        result["follow_redirects"] = True
-        result["status_code"] = True
-        result["title"] = True
-        result["output_file"] = "result.txt"
-        result["input_file"] = "domains.txt"
-        result["additional_args"] = "-rl 60,-rlm 3000"
-        result["capture_output"] = True
-        result["output_log_file"] = "httpx_output.log"
-        
+    # 配置项类型映射
+    config_types = {
+        "httpx_path": "str",
+        "threads": "int",
+        "timeout": "int",
+        "follow_redirects": "bool",
+        "status_code": "bool",
+        "title": "bool",
+        "output_file": "str",
+        "input_file": "str",
+        "additional_args": "str",
+        "capture_output": "bool",
+        "output_log_file": "str"
+    }
+    
+    # 创建结果字典，初始值为默认配置
+    result = default_config.copy()
+    
+    # 从配置对象中读取值，覆盖默认值
+    for key, type_info in config_types.items():
+        if config.has_option("httpx", key):
+            if type_info == "str":
+                result[key] = config.get("httpx", key)
+            elif type_info == "int":
+                result[key] = config.getint("httpx", key)
+            elif type_info == "bool":
+                result[key] = config.getboolean("httpx", key)
+    
     return result
