@@ -62,9 +62,9 @@ SubDataRefine/
   python SubDataRefine.py -c my_config.ini
   ```
   
-- `-nc, --no-capture`：不捕获httpx的输出到日志文件
+- `-np, --no-process`：直接调用httpx程序而不捕获输出
   ```
-  python SubDataRefine.py -nc
+  python SubDataRefine.py -np
   ```
   
 - `-v, --version`：显示版本信息

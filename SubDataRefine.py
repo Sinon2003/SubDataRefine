@@ -77,14 +77,14 @@ def parse_args():
                         help="跳过httpx探活步骤，只处理子域名数据")
     parser.add_argument("-i", "--init", action="store_true", 
                         help="初始化必要的目录结构")
-    parser.add_argument("-nc", "--no-capture", action="store_true", 
-                        help="不捕获httpx输出到日志文件")
+    parser.add_argument("-np", "--no-process", action="store_true", 
+                        help="直接调用httpx程序而不捕获输出")
     parser.add_argument("-v", "--version", action="version", 
                         version="SubDataRefine v1.0.0")
     
     return parser.parse_args()
 
-def run_workflow(config_path, skip_httpx=False, output_file=None, capture_output=None):
+def run_workflow(config_path, skip_httpx=False, output_file=None, no_process=False):
     """
     运行完整工作流程
     
@@ -174,25 +174,14 @@ def run_workflow(config_path, skip_httpx=False, output_file=None, capture_output
                 print(f"\n正在构建探活命令...")
                 print("正在进行探活，这可能需要一些时间...")
                 
-                # 准备日志文件路径
-                output_log_file = None
-                if capture_output is not None:
-                    # 使用命令行传入的设置覆盖配置文件的设置
-                    use_capture = capture_output
+                if no_process:
+                    print("直接调用httpx程序而不捕获输出...")
+                    # 执行httpx命令，不捕获输出
+                    exitcode, stdout, stderr = run_httpx(cmd, no_process=True)
                 else:
-                    # 使用配置文件的设置
-                    use_capture = httpx_config.get("capture_output", True)
-                
-                if use_capture:
-                    # 生成日志文件路径
-                    log_file_name = httpx_config.get("output_log_file", "httpx_output.log")
-                    output_log_file = os.path.join(temp_dir, log_file_name)
-                    print(f"将捕获httpx输出到文件: {output_log_file}")
-                else:
-                    print("不捕获httpx的输出到日志文件")
-                
-                # 执行httpx命令
-                exitcode, stdout, stderr = run_httpx(cmd, use_capture, output_log_file)
+                    print("正在运行httpx，输出显示在控制台...")
+                    # 执行httpx命令，捕获输出
+                    exitcode, stdout, stderr = run_httpx(cmd)
                 
                 # 检查输出文件并确定是否成功
                 if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
@@ -268,11 +257,8 @@ def main():
         # 自动检查并初始化项目结构
         check_and_init_directories()
         
-        # 如果指定了--no-capture参数，则设置capture_output为False
-        capture_output = False if args.no_capture else None
-        
         # 运行工作流程
-        run_workflow(args.config, args.skip_httpx, args.output, capture_output)
+        run_workflow(args.config, args.skip_httpx, args.output, args.no_process)
     
 
 
