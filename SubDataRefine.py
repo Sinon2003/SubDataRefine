@@ -29,7 +29,7 @@ sys.path.append(ROOT_DIR)
 # 导入工具模块
 from utils.logging_utils import setup_logger
 from utils.file_utils import ensure_dir_exists
-from utils.config_utils import load_config, get_domain_extract_config, get_paths_config, get_httpx_config
+from utils.config_utils import load_config, get_domain_extract_config, get_paths_config, get_httpx_config, get_filter_config
 from utils.httpx_utils import build_httpx_command, run_httpx
 
 def load_script(script_name):
@@ -196,27 +196,49 @@ def run_workflow(config_path, skip_httpx=False, output_file=None, no_process=Fal
                     skip_httpx = True  # 如果httpx执行失败，跳过结果处理
     
     # 步骤3: 处理探活结果
+    processed_result_file = None
     if skip_httpx:
-        print("\n[3/3] 跳过探活结果处理步骤...")
+        print("\n[3/4] 跳过探活结果处理步骤...")
         print("提示: 由于跳过了探活步骤，不需要处理探活结果")
     else:
         process_script = load_script("process_results")
         if process_script:
-            print("\n[3/3] 正在处理探活结果...")
+            print("\n[3/4] 正在处理探活结果...")
             # 使用temp目录中的原始结果文件
             result_file = os.path.join(temp_dir, httpx_config.get("output_file"))
-            output_file = os.path.join(ROOT_DIR, "result", "result_processed.csv")
+            processed_result_file = os.path.join(ROOT_DIR, "result", "result_processed.csv")
             
             # 检查result.txt是否存在
             if os.path.exists(result_file):
                 process_script.main(
                     input_file=result_file,
-                    output_file=output_file
+                    output_file=processed_result_file
                 )
             else:
                 print(f"警告: 找不到结果文件 {result_file}，跳过处理步骤")
         else:
             print("警告: 无法加载结果处理脚本，跳过处理步骤")
+    
+    # 步骤4: 筛选过滤处理后的结果
+    if processed_result_file and os.path.exists(processed_result_file):
+        filter_script = load_script("filter_results")
+        if filter_script:
+            print("\n[4/4] 正在筛选探活结果...")
+            # 读取过滤配置
+            filter_config = get_filter_config(config)
+            output_file = os.path.join(ROOT_DIR, filter_config.get("output_file", "result/filtered_results.csv"))
+            
+            # 执行筛选
+            filter_script.main(
+                input_file=processed_result_file,
+                output_file=output_file,
+                filter_config=filter_config
+            )
+        else:
+            print("警告: 无法加载筛选过滤脚本，跳过筛选步骤")
+    else:
+        print("\n[4/4] 跳过结果筛选过滤步骤...")
+        print("提示: 由于缺少处理后的结果文件，不能进行筛选过滤")
     
     print("\n=== 子域名数据处理完成 ===")
 

@@ -26,10 +26,6 @@ def process_result_file(input_file, output_file):
     # 存储提取的数据
     data = []
     
-    # 正则表达式模式匹配 URL [状态码] [标题] 格式
-    # 修改正则表达式以处理ANSI颜色代码
-    pattern = r'^(https?://[^\s]+)\s+\[(?:\x1b\[[\d;]+m)?(\d+)(?:\x1b\[0m)?\]\s+\[(?:\x1b\[[\d;]+m)?(.+?)(?:\x1b\[0m)?\]'
-    
     try:
         # 打开并读取输入文件
         with open(input_file, 'r', encoding='utf-8', errors='ignore') as f:
@@ -38,59 +34,77 @@ def process_result_file(input_file, output_file):
                 if not line:
                     continue
                 
-                # 使用正则表达式提取数据
-                match = re.match(pattern, line)
-                if match:
-                    url = match.group(1)
-                    status_code = match.group(2)
-                    title = match.group(3)
-                    data.append([url, status_code, title])
-                else:
-                    # 尝试删除所有ANSI转义序列后再匹配
-                    # ANSI转义序列通常是\x1b[...m格式
-                    ansi_escape = re.compile(r'\x1b\[(?:\d+;)*\d+m')
-                    clean_line = ansi_escape.sub('', line)
+                # 删除所有ANSI转义序列
+                ansi_escape = re.compile(r'\x1b\[(?:\d+;)*\d+m')
+                clean_line = ansi_escape.sub('', line)
+                
+                # 提取URL（第一个空格之前的部分）
+                url_match = re.match(r'^(https?://[^\s]+)', clean_line)
+                if not url_match:
+                    logger.warning(f"无法提取URL: {line}")
+                    continue
                     
-                    # 清除后尝试使用简化的正则表达式匹配
-                    simple_pattern = r'^(https?://[^\s]+)\s+\[(\d+)\]\s+\[(.+?)\]'
-                    simple_match = re.match(simple_pattern, clean_line)
+                url = url_match.group(1)
+                
+                # 查找所有方括号内容
+                brackets = re.findall(r'\[(.*?)\]', clean_line)
+                if len(brackets) < 2:
+                    logger.warning(f"方括号内容不足: {line}")
+                    continue
+                
+                # 提取状态码（第一个方括号）
+                status_code_raw = brackets[0]
+                
+                # 处理状态码，可能有多个状态码如 "302,200"
+                # 识别状态码中的数字
+                status_codes = re.findall(r'\d+', status_code_raw)
+                if not status_codes:
+                    logger.warning(f"无法提取状态码: {line}")
+                    continue
                     
-                    if simple_match:
-                        url = simple_match.group(1)
-                        status_code = simple_match.group(2)
-                        title = simple_match.group(3)
-                        data.append([url, status_code, title])
-                    else:
-                        # 仍然失败，尝试更简单的方法
-                        # 直接提取URL和方括号内的内容
-                        url_pattern = r'^(https?://[^\s]+)'
-                        url_match = re.match(url_pattern, clean_line)
-                        
-                        # 处理多状态码的情况，如[[33m302[0m,[32m200[0m]
-                        # 首先尝试提取所有状态码
-                        status_codes = []
-                        status_pattern = r'\[(\d+)\]|,(\d+)'
-                        for status_match in re.finditer(status_pattern, clean_line):
-                            code = status_match.group(1) or status_match.group(2)
-                            if code:
-                                status_codes.append(code)
-                        
-                        # 使用最后一个状态码（通常是最终状态）
-                        status_code = status_codes[-1] if status_codes else None
-                        
-                        # 提取标题
-                        title_pattern = r'\]\s+\[(.+?)\]|\[\s*(.+?)\s*\]$'
-                        title_match = re.search(title_pattern, clean_line)
-                        
-                        if url_match and status_code and title_match:
-                            url = url_match.group(1)
-                            # 使用正则表达式中获取的第一个或第二个捕获组（哪个不为None）
-                            title = title_match.group(1) if title_match.group(1) else title_match.group(2)
-                            # 结合所有状态码，使用逗号分隔
-                            all_status_codes = ','.join(status_codes)
-                            data.append([url, all_status_codes, title])
-                        else:
-                            logger.warning(f"无法解析行: {line}")
+                # 使用所有状态码，用逗号连接
+                status_code = ','.join(status_codes)
+                
+                # 提取标题（第二个方括号）
+                title = brackets[1] if len(brackets) > 1 else ""
+                
+                # 提取重定向URL（如果存在的话，第三个方括号）
+                redirect_url = brackets[2] if len(brackets) > 2 else ""
+                
+                # 构建数据记录
+                record = [url, status_code, title]
+                
+                # 如果有重定向URL，添加到记录中
+                if redirect_url:
+                    record.append(redirect_url)
+                
+                data.append(record)
+        
+        # 确保输出目录存在
+        output_dir = os.path.dirname(output_file)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        
+        # 写入到CSV文件
+        with open(output_file, 'w', encoding='utf-8', newline='') as f:
+            writer = csv.writer(f)
+            
+            # 构建表头
+            headers = ["url", "状态码", "标题"]
+            if any(len(record) > 3 for record in data):
+                headers.append("重定向URL")
+                
+            # 写入表头
+            writer.writerow(headers)
+            
+            # 写入数据
+            writer.writerows(data)
+        
+        return len(data)
+        
+    except Exception as e:
+        logger.error(f"处理结果文件出错: {e}")
+        return 0
         
         # 确保输出目录存在
         output_dir = os.path.dirname(output_file)

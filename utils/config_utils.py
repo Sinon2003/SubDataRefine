@@ -72,7 +72,58 @@ def get_domain_extract_config(config):
         
     return result
 
+
+
+    """
+    获取数据筛选相关配置
+    
+    参数:
+        config: 配置对象
+        
+    返回:
+        包含筛选配置的字典
+    """
+    # 默认配置
+    default_config = {
+        "input_file": "result/result_processed.csv",
+        "output_file": "result/filtered_results.csv",
+        "status_codes": "200",
+        "title_keywords": "登录,注册,系统,后台,admin,login,system",
+        "logic_and": True,
+        "include_redirect": True
+    }
+    
+    # 如果配置对象为空或不包含filter部分，直接返回默认配置
+    if not config or not config.has_section("filter"):
+        return default_config.copy()
+    
+    # 配置项类型映射
+    config_types = {
+        "input_file": "str",
+        "output_file": "str",
+        "status_codes": "str",
+        "title_keywords": "str",
+        "logic_and": "bool",
+        "include_redirect": "bool"
+    }
+    
+    # 创建结果字典，初始值为默认配置
+    result = default_config.copy()
+    
+    # 从配置对象中读取值，覆盖默认值
+    for key, type_info in config_types.items():
+        if config.has_option("filter", key):
+            if type_info == "str":
+                result[key] = config.get("filter", key)
+            elif type_info == "int":
+                result[key] = config.getint("filter", key)
+            elif type_info == "bool":
+                result[key] = config.getboolean("filter", key)
+    
+    return result
+
 def get_paths_config(config):
+
     """
     获取路径相关配置
     
@@ -112,6 +163,55 @@ def get_paths_config(config):
         result["result_dir"] = "result"
         result["temp_dir"] = "temp"
         
+    return result
+
+
+    """
+    获取数据筛选相关配置
+    
+    参数:
+        config: 配置对象
+        
+    返回:
+        包含筛选配置的字典
+    """
+    # 默认配置
+    default_config = {
+        "input_file": "result/result_processed.csv",
+        "output_file": "result/filtered_results.csv",
+        "status_codes": "200",
+        "title_keywords": "登录,注册,系统,后台,admin,login,system",
+        "logic_and": True,
+        "include_redirect": True
+    }
+    
+    # 如果配置对象为空或不包含filter部分，直接返回默认配置
+    if not config or not config.has_section("filter"):
+        return default_config.copy()
+    
+    # 配置项类型映射
+    config_types = {
+        "input_file": "str",
+        "output_file": "str",
+        "status_codes": "str",
+        "title_keywords": "str",
+        "logic_and": "bool",
+        "include_redirect": "bool"
+    }
+    
+    # 创建结果字典，初始值为默认配置
+    result = default_config.copy()
+    
+    # 从配置对象中读取值，覆盖默认值
+    for key, type_info in config_types.items():
+        if config.has_option("filter", key):
+            if type_info == "str":
+                result[key] = config.get("filter", key)
+            elif type_info == "int":
+                result[key] = config.getint("filter", key)
+            elif type_info == "bool":
+                result[key] = config.getboolean("filter", key)
+    
     return result
 
 def get_httpx_config(config):
@@ -171,4 +271,52 @@ def get_httpx_config(config):
             elif type_info == "bool":
                 result[key] = config.getboolean("httpx", key)
     
+    return result
+
+def get_filter_config(config):
+    """
+    获取数据筛选相关配置
+    
+    参数:
+        config: 配置对象
+        
+    返回:
+        包含筛选配置的字典
+    """
+    # 默认配置
+    default_config = {
+        "input_file": "result/result_processed.csv",
+        "output_file": "result/filtered_results.csv",
+        "status_codes": "200",
+        "title_keywords": "登录,注册,系统,后台,admin,login,system",
+        "logic_and": True,
+        "include_redirect": True
+    }
+    
+    # 如果配置对象为空或不包含filter部分，直接返回默认配置
+    if not config or not config.has_section("filter"):
+        return default_config.copy()
+    
+    # 配置项类型映射
+    config_types = {
+        "input_file": "str",
+        "output_file": "str",
+        "status_codes": "str",
+        "title_keywords": "str",
+        "logic_and": "bool",
+        "include_redirect": "bool"
+    }
+    
+    # 创建结果字典，初始值为默认配置
+    result = default_config.copy()
+    
+    # 从配置对象中读取值，覆盖默认值
+    for key, type_info in config_types.items():
+        if config.has_option("filter", key):
+            if type_info == "str":
+                result[key] = config.get("filter", key)
+            elif type_info == "int":
+                result[key] = config.getint("filter", key)
+            elif type_info == "bool":
+                result[key] = config.getboolean("filter", key)
     return result
