@@ -48,28 +48,50 @@ def process_result_file(input_file, output_file):
                 
                 # 查找所有方括号内容
                 brackets = re.findall(r'\[(.*?)\]', clean_line)
-                if len(brackets) < 2:
-                    logger.warning(f"方括号内容不足: {line}")
-                    continue
                 
-                # 提取状态码（第一个方括号）
-                status_code_raw = brackets[0]
+                # 初始化变量
+                status_code = ""
+                title = ""
+                redirect_url = ""
                 
-                # 处理状态码，可能有多个状态码如 "302,200"
-                # 识别状态码中的数字
-                status_codes = re.findall(r'\d+', status_code_raw)
-                if not status_codes:
-                    logger.warning(f"无法提取状态码: {line}")
-                    continue
+                # 处理各种可能的情况
+                if not brackets:
+                    # 完全没有方括号，但仍然有URL，我们可以保留该记录
+                    logger.warning(f"没有方括号内容: {url}")
+                    status_code = "Unknown"
+                    # 标题保持为空
+                elif len(brackets) == 1:
+                    # 只有一个方括号，通常是状态码
+                    status_code_raw = brackets[0]
+                    status_codes = re.findall(r'\d+', status_code_raw)
+                    if status_codes:
+                        status_code = ','.join(status_codes)
+                        # 标题保持为空字符串
+                    else:
+                        # 如果方括号中没有数字，内容不明确，设置状态码为Unknown，标题保持为空
+                        status_code = "Unknown"
+                    logger.warning(f"方括号内容不足: {url} [{status_code}]")
+                else:
+                    # 正常情况或有更多方括号
+                    # 提取状态码（第一个方括号）
+                    status_code_raw = brackets[0]
                     
-                # 使用所有状态码，用逗号连接
-                status_code = ','.join(status_codes)
-                
-                # 提取标题（第二个方括号）
-                title = brackets[1] if len(brackets) > 1 else ""
-                
-                # 提取重定向URL（如果存在的话，第三个方括号）
-                redirect_url = brackets[2] if len(brackets) > 2 else ""
+                    # 处理状态码，可能有多个状态码如 "302,200"
+                    # 识别状态码中的数字
+                    status_codes = re.findall(r'\d+', status_code_raw)
+                    if status_codes:
+                        # 使用所有状态码，用逗号连接
+                        status_code = ','.join(status_codes)
+                    else:
+                        # 状态码为空，但继续处理
+                        logger.warning(f"无法提取状态码: {url} [{status_code_raw}]")
+                        status_code = "Unknown"
+                    
+                    # 提取标题（第二个方括号）
+                    title = brackets[1] if len(brackets) > 1 else ""
+                    
+                    # 提取重定向URL（如果存在的话，第三个方括号）
+                    redirect_url = brackets[2] if len(brackets) > 2 else ""
                 
                 # 构建数据记录
                 record = [url, status_code, title]
@@ -97,25 +119,6 @@ def process_result_file(input_file, output_file):
             # 写入表头
             writer.writerow(headers)
             
-            # 写入数据
-            writer.writerows(data)
-        
-        return len(data)
-        
-    except Exception as e:
-        logger.error(f"处理结果文件出错: {e}")
-        return 0
-        
-        # 确保输出目录存在
-        output_dir = os.path.dirname(output_file)
-        if output_dir and not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        
-        # 写入到CSV文件
-        with open(output_file, 'w', encoding='utf-8', newline='') as f:
-            writer = csv.writer(f)
-            # 写入表头
-            writer.writerow(["url", "状态码", "标题"])
             # 写入数据
             writer.writerows(data)
         

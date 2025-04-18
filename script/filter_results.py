@@ -105,7 +105,41 @@ def filter_results(input_file, output_file, filter_config):
         logger.error(f"筛选数据时出错: {e}")
         return 0
 
-def main(input_file=None, output_file=None, filter_config=None):
+def export_urls_to_txt(csv_file, txt_file):
+    """
+    从筛选后的CSV文件中提取URL并保存为TXT格式
+    
+    参数:
+        csv_file: 输入CSV文件路径
+        txt_file: 输出TXT文件路径
+        
+    返回:
+        导出的URL数量
+    """
+    try:
+        urls = []
+        # 从CSV文件中读取URL
+        with open(csv_file, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            headers = next(reader)  # 读取表头
+            url_idx = headers.index("url") if "url" in headers else 0
+            
+            # 提取所有URL
+            for row in reader:
+                if len(row) > url_idx:
+                    urls.append(row[url_idx])
+        
+        # 写入到TXT文件
+        with open(txt_file, 'w', encoding='utf-8') as f:
+            for url in urls:
+                f.write(f"{url}\n")
+        
+        return len(urls)
+    except Exception as e:
+        logger.error(f"导出URL到TXT文件时出错: {e}")
+        return 0
+
+def main(input_file=None, output_file=None, filter_config=None, export_txt=True):
     """
     主函数
     
@@ -171,6 +205,13 @@ def main(input_file=None, output_file=None, filter_config=None):
         
         logger.info(f"处理完成！共筛选出 {count} 条记录，已保存至 {output_file_path}")
         print(f"处理完成！共筛选出 {count} 条记录，已保存至 {output_file_path}")
+        
+        # 导出URL到TXT文件
+        if export_txt and count > 0:
+            txt_file_path = os.path.splitext(output_file_path)[0] + "_urls.txt"
+            export_count = export_urls_to_txt(output_file_path, txt_file_path)
+            logger.info(f"已导出 {export_count} 个URL到 {txt_file_path}")
+            print(f"已导出 {export_count} 个URL到 {txt_file_path}")
     
     except Exception as e:
         logger.error(f"执行筛选时出错: {e}")
