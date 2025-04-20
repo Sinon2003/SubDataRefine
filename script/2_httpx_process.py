@@ -61,7 +61,7 @@ def process_result_file(input_file, output_file):
                     status_code = "Unknown"
                     # 标题保持为空
                 elif len(brackets) == 1:
-                    # 只有一个方括号，通常是状态码
+                    # 只有一个方括号，通常是状态码（这是正常情况，只是没有标题）
                     status_code_raw = brackets[0]
                     status_codes = re.findall(r'\d+', status_code_raw)
                     if status_codes:
@@ -70,7 +70,6 @@ def process_result_file(input_file, output_file):
                     else:
                         # 如果方括号中没有数字，内容不明确，设置状态码为Unknown，标题保持为空
                         status_code = "Unknown"
-                    logger.warning(f"方括号内容不足: {url} [{status_code}]")
                 else:
                     # 正常情况或有更多方括号
                     # 提取状态码（第一个方括号）
