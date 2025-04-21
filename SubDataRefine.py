@@ -113,7 +113,7 @@ def run_workflow(config_path, skip_httpx=False, output_file=None, no_process=Fal
         output_file = default_output_file
     
     # 步骤1: 提取子域名
-    extract_script = load_script("extract_domains")
+    extract_script = load_script("1_extract_subdomains")
     if extract_script:
         print("\n[1/3] 正在提取子域名...")
         
@@ -201,7 +201,7 @@ def run_workflow(config_path, skip_httpx=False, output_file=None, no_process=Fal
         print("\n[3/4] 跳过探活结果处理步骤...")
         print("提示: 由于跳过了探活步骤，不需要处理探活结果")
     else:
-        process_script = load_script("process_results")
+        process_script = load_script("2_httpx_process")
         if process_script:
             print("\n[3/4] 正在处理探活结果...")
             # 使用temp目录中的原始结果文件
@@ -221,7 +221,7 @@ def run_workflow(config_path, skip_httpx=False, output_file=None, no_process=Fal
     
     # 步骤4: 筛选过滤处理后的结果
     if processed_result_file and os.path.exists(processed_result_file):
-        filter_script = load_script("filter_results")
+        filter_script = load_script("3_filter_targets")
         if filter_script:
             print("\n[4/4] 正在筛选探活结果...")
             # 读取过滤配置
